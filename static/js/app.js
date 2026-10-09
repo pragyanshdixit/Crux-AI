@@ -1,5 +1,7 @@
 /**
  * Crux AI — Frontend Application Logic
+ * Manages state, visual stepper telemetry, intelligence rendering,
+ * interactive RAG chat session, and client-side Groq Cloud API key storage.
  */
 
 (function () {
