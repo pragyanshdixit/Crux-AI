@@ -1,0 +1,44 @@
+# Environment variables & API keys
+.env
+.env.*
+!.env.example
+
+# Python virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Audio downloads and temporary files
+downloads/
+temp/
+*.wav
+*.mp3
+*.m4a
+*.webm
+*.ogg
+
+# Vector store database
+chroma_db/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local backups
+_backup_crux/
+
