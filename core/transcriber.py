@@ -1,3 +1,8 @@
+"""Crux AI Transcription Engine.
+Provides ultra-fast hardware-accelerated speech-to-text via Groq Cloud LPUs
+(whisper-large-v3-turbo) with automatic graceful fallback to local CPU Whisper.
+"""
+
 import os
 from dotenv import load_dotenv
 
