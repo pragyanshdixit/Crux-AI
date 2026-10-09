@@ -1,3 +1,8 @@
+"""Crux AI FastAPI Application.
+Exposes endpoints for video intelligence processing, RAG chat, Groq key verification,
+and production storage lifecycle maintenance.
+"""
+
 import os
 import sys
 import uuid
