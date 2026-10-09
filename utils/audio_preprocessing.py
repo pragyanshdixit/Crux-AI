@@ -1,3 +1,8 @@
+"""Crux AI Audio Preprocessing & Storage Management Module.
+Handles session-isolated audio downloads, yt-dlp challenge solving,
+lightweight audio streaming, and automatic disk space reclamation.
+"""
+
 import os
 import shutil
 import uuid
