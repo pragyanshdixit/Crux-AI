@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crux AI — Executive Video Intelligence & Interactive RAG Chat</title>
+    <meta name="description" content="Crux AI transforms any YouTube video into structured executive summaries, actionable task checklists, key decisions, and interactive RAG chat.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Modern Atmospheric Canvas Mesh -->
+    <div class="canvas-mesh"></div>
+
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#1d4ed8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">Crux <span class="gradient-text">AI</span></span>
+                    <span class="brand-subtitle">Executive Intelligence</span>
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <button class="btn btn-secondary btn-sm" id="apiKeyModalBtn" title="Configure your Groq Cloud API Key">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 2l-2 2m-2-2l2 2m-4.5 4.5l-9.5 9.5a2.5 2.5 0 01-3.5-3.5l9.5-9.5m6 6l-2-2m-2 2l2-2"/>
+                    </svg>
+                    <span id="apiKeyStatusText">API Key</span>
+                    <span class="status-indicator-dot" id="apiKeyIndicatorDot"></span>
+                </button>
+                <div class="badge badge-pulse" id="storageBadge" title="Automated disk cleaning keeps your server lightweight and prevents deployment crashes">
+                    <span class="pulse-dot"></span>
+                    <span id="storageStatusText">Auto-Clean: Active</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="purgeBtn" title="Manually purge all temporary audio files from server">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    Clean Cache
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Hero Input Section -->
+        <section class="hero-section" id="heroSection">
+            <div class="hero-badge">
+                <span class="badge-status-dot"></span> Groq Cloud LPU &bull; Whisper Large Turbo &bull; Precision RAG
+            </div>
+            <h1 class="hero-title">
+                Get to the Crux of Any Video <br>
+                <span class="gradient-text">With Instant Executive Intelligence</span>
+            </h1>
+            <p class="hero-desc">
+                Paste any YouTube URL to synthesize structured executive summaries, prioritized action checklists, strategic decisions, and chat interactively with the video context.
+            </p>
+
+            <!-- URL Input Card -->
+            <div class="glass-card input-card">
+                <form id="processForm" class="input-form">
+                    <div class="input-wrapper">
+                        <div class="input-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+                                <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+                            </svg>
+                        </div>
+                        <input 
+                            type="url" 
+                            id="videoUrl" 
+                            placeholder="Paste YouTube link (e.g. https://youtu.be/...)" 
+                            required 
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                        <button type="button" class="btn-paste" id="pasteBtn" title="Paste from clipboard">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                            <span>Paste</span>
+                        </button>
+                    </div>
+
+                    <div class="form-footer">
+                        <div class="toggle-group" title="Deletes temporary audio chunks right after transcription to prevent disk full issues on cloud deployments">
+                            <label class="switch">
+                                <input type="checkbox" id="autoCleanup" checked>
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="toggle-label">
+                                Auto-clean temporary audio 
+                                <span class="info-pill" title="Recommended for cloud deployment. Saves hundreds of MB per video by freeing disk space immediately after Whisper transcribes.">Recommended</span>
+                            </span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span class="btn-text">Extract Intelligence</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Quick Samples -->
+                <div class="samples-row">
+                    <span class="samples-label">Quick test:</span>
+                    <button class="sample-chip" data-url="https://youtu.be/2kD9v7Q3vec?si=t_KTb-65vIwMcMAt">
+                        <span class="chip-dot"></span> How to Use Jev AI
+                    </button>
+                    <button class="sample-chip" data-url="https://youtu.be/T-D1OfcDW1M?si=CK2ISohhv6o8g8FZ">
+                        <span class="chip-dot"></span> Product AI Demo
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Processing Stepper View -->
+        <section class="progress-section hidden" id="progressSection">
+            <div class="glass-card progress-card">
+                <div class="progress-header">
+                    <div class="spinner-ring"></div>
+                    <div>
+                        <h2 class="progress-title" id="progressStepTitle">Processing Audio Pipeline...</h2>
+                        <p class="progress-desc" id="progressStepDesc">Downloading YouTube audio and solving challenge tokens</p>
+                    </div>
+                </div>
+
+                <div class="stepper">
+                    <div class="step active" id="step1">
+                        <div class="step-num">1</div>
+                        <div class="step-info">
+                            <span class="step-name">Download</span>
+                            <span class="step-status">In Progress</span>
+                        </div>
+                    </div>
+                    <div class="step-line" id="line1"></div>
+                    <div class="step" id="step2">
+                        <div class="step-num">2</div>
+                        <div class="step-info">
+                            <span class="step-name">Chunking</span>
+                            <span class="step-status">Waiting</span>
+                        </div>
+                    </div>
+                    <div class="step-line" id="line2"></div>
+                    <div class="step" id="step3">
+                        <div class="step-num">3</div>
+                        <div class="step-info">
+                            <span class="step-name">Whisper STT</span>
+                            <span class="step-status">Waiting</span>
+                        </div>
+                    </div>
+                    <div class="step-line" id="line3"></div>
+                    <div class="step" id="step4">
+                        <div class="step-num">4</div>
+                        <div class="step-info">
+                            <span class="step-name">AI Synthesis</span>
+                            <span class="step-status">Waiting</span>
+                        </div>
+                    </div>
+                    <div class="step-line" id="line4"></div>
+                    <div class="step" id="step5">
+                        <div class="step-num">5</div>
+                        <div class="step-info">
+                            <span class="step-name">RAG Knowledge</span>
+                            <span class="step-status">Waiting</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-footer-note">
+                    <span>⚡ Hardware-accelerated with Groq Whisper LPU &amp; unified single-pass synthesis. Processing finishes in 5–8 seconds.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Executive Dashboard (Results View) -->
+        <section class="dashboard-section hidden" id="dashboardSection">
+            <!-- Header Bar -->
+            <div class="glass-card video-meta-card">
+                <div class="meta-main">
+                    <div class="meta-tag">AI ANALYSIS READY</div>
+                    <h2 class="video-title" id="displayTitle">Video Title</h2>
+                    <div class="meta-stats">
+                        <span class="stat-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <span id="statWords">0</span> words</span>
+                        <span class="stat-dot">•</span>
+                        <span class="stat-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Processed in <span id="statTime">0</span>s</span>
+                        <span class="stat-dot">•</span>
+                        <span class="stat-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> <span id="statChunks">0</span> audio segments</span>
+                        <span class="stat-dot">•</span>
+                        <span class="stat-item disk-cleaned" id="diskCleanedStat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Audio Auto-Cleaned</span>
+                    </div>
+                </div>
+                <div class="meta-actions">
+                    <button class="btn btn-secondary btn-sm" id="copyAllBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Copy Report
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="newVideoBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        New Video
+                    </button>
+                </div>
+            </div>
+
+            <!-- Two Column Layout: Tabs & RAG Chat -->
+            <div class="workspace-grid">
+                <!-- Left: Intel Tabs -->
+                <div class="intel-column">
+                    <!-- Tab Navigation -->
+                    <div class="tab-nav">
+                        <button class="tab-btn active" data-tab="tabSummary">
+                            <span class="tab-icon">📝</span>
+                            <span>Summary</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tabAction">
+                            <span class="tab-icon">⚡</span>
+                            <span>Action Items</span>
+                            <span class="tab-pill" id="actionPill">0</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tabDecisions">
+                            <span class="tab-icon">⚖️</span>
+                            <span>Decisions</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tabQuestions">
+                            <span class="tab-icon">❓</span>
+                            <span>Questions</span>
+                        </button>
+                        <button class="tab-btn" data-tab="tabTranscript">
+                            <span class="tab-icon">📜</span>
+                            <span>Transcript</span>
+                        </button>
+                    </div>
+
+                    <!-- Tab Content Panels -->
+                    <div class="glass-card tab-content-card">
+                        <!-- Summary Panel -->
+                        <div class="tab-panel active" id="tabSummary">
+                            <div class="panel-header">
+                                <h3 class="panel-title">Executive Summary</h3>
+                                <button class="btn-icon" data-copy="summaryContent" title="Copy summary">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                            </div>
+                            <div class="markdown-body" id="summaryContent"></div>
+                        </div>
+
+                        <!-- Action Items Panel -->
+                        <div class="tab-panel" id="tabAction">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Actionable Items &amp; Tasks</h3>
+                                    <p class="panel-sub">Tasks, deadlines, and responsibilities extracted from the discussion</p>
+                                </div>
+                                <button class="btn-icon" data-copy="actionContent" title="Copy actions">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                            </div>
+                            <div class="markdown-body" id="actionContent"></div>
+                        </div>
+
+                        <!-- Decisions Panel -->
+                        <div class="tab-panel" id="tabDecisions">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Decisions &amp; Strategic Rationale</h3>
+                                    <p class="panel-sub">Critical choices made in the content along with their reasoning</p>
+                                </div>
+                                <button class="btn-icon" data-copy="decisionsContent" title="Copy decisions">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                            </div>
+                            <div class="markdown-body" id="decisionsContent"></div>
+                        </div>
+
+                        <!-- Questions Panel -->
+                        <div class="tab-panel" id="tabQuestions">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Key Questions &amp; Takeaways</h3>
+                                    <p class="panel-sub">Important questions addressed during the video</p>
+                                </div>
+                                <button class="btn-icon" data-copy="questionsContent" title="Copy questions">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                            </div>
+                            <div class="markdown-body" id="questionsContent"></div>
+                        </div>
+
+                        <!-- Transcript Panel -->
+                        <div class="tab-panel" id="tabTranscript">
+                            <div class="panel-header">
+                                <h3 class="panel-title">Full Speech-to-Text Transcript</h3>
+                                <button class="btn-icon" data-copy="transcriptContent" title="Copy transcript">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                            </div>
+                            <div class="transcript-box" id="transcriptContent"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Interactive RAG Chat -->
+                <div class="chat-column">
+                    <div class="glass-card chat-card">
+                        <div class="chat-header">
+                            <div class="chat-header-info">
+                                <div class="chat-avatar">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="chat-title">Ask Crux AI</h3>
+                                    <p class="chat-subtitle">Grounded in the video context via RAG</p>
+                                </div>
+                            </div>
+                            <button class="btn-clear-chat" id="clearChatBtn" title="Clear chat history">Clear</button>
+                        </div>
+
+                        <!-- Chat Messages Container -->
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-msg ai-msg">
+                                <div class="msg-avatar">AI</div>
+                                <div class="msg-bubble">
+                                    <p>Hello! I am Crux AI. I have analyzed the entire video transcript and indexed it in high-precision semantic vector space. Ask me anything about the video:</p>
+                                    <div class="quick-prompts">
+                                        <button class="prompt-chip" data-prompt="What are the key takeaways from this video?">Key Takeaways</button>
+                                        <button class="prompt-chip" data-prompt="What were the main decisions made and why?">Decisions &amp; Rationale</button>
+                                        <button class="prompt-chip" data-prompt="List all actionable tasks and deadlines">Action Items</button>
+                                        <button class="prompt-chip" data-prompt="How do I get started with the tools discussed?">How to Get Started</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Input Box -->
+                        <form id="chatForm" class="chat-input-bar">
+                            <input 
+                                type="text" 
+                                id="chatInput" 
+                                placeholder="Ask a question about the video..." 
+                                autocomplete="off"
+                            >
+                            <button type="submit" class="btn-chat-send" id="chatSendBtn" title="Send question">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- API Key Settings Modal -->
+    <div class="modal-backdrop hidden" id="apiKeyModal">
+        <div class="glass-card modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-2-2l2 2m-4.5 4.5l-9.5 9.5a2.5 2.5 0 01-3.5-3.5l9.5-9.5m6 6l-2-2m-2 2l2-2"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="modal-title">Groq Cloud API Key</h3>
+                        <p class="modal-desc">Bring your own key for ultra-fast Whisper LPU transcriptions &amp; models.</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" id="closeApiKeyModalBtn" aria-label="Close modal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="input-label-row">
+                    <label for="apiKeyInput" class="form-label">Groq API Key</label>
+                    <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="link-external">
+                        Get free Groq key &nearr;
+                    </a>
+                </div>
+                <div class="key-input-wrapper">
+                    <input 
+                        type="password" 
+                        id="apiKeyInput" 
+                        class="text-input" 
+                        placeholder="gsk_..." 
+                        autocomplete="off" 
+                        spellcheck="false"
+                    >
+                    <button type="button" class="btn-toggle-eye" id="toggleKeyVisibilityBtn" title="Show / Hide Key">
+                        <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+                
+                <div class="key-notice">
+                    <span class="notice-icon">🔒</span>
+                    <p>Stored locally in your browser and sent with your requests. If omitted, Crux AI will fall back to the server's default <code>.env</code> key.</p>
+                </div>
+                
+                <div class="key-validation-status hidden" id="keyValidationStatus"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" id="clearApiKeyBtn">Clear Key</button>
+                <div class="footer-actions-right">
+                    <button type="button" class="btn btn-secondary btn-sm" id="verifyApiKeyBtn">Test &amp; Verify</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="saveApiKeyBtn">Save Key</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
