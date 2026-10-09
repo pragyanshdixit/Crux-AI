@@ -1,3 +1,8 @@
+"""Crux AI Semantic Vector Store.
+Indexes transcript segments into ChromaDB using cached local MiniLM embeddings.
+Supports session-isolated collections to avoid cross-video context contamination.
+"""
+
 from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
