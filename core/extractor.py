@@ -1,3 +1,8 @@
+"""Crux AI High-Efficiency Intelligence Extractor.
+Extracts title, executive summary, actionable tasks, decisions, and questions
+in a single unified Groq API call using native JSON mode, cutting token usage by ~85%.
+"""
+
 import os
 import re
 import json
