@@ -4,14 +4,6 @@
     {
       "source": "/api/:path*",
       "destination": "https://crux-ai-gaj7.onrender.com/api/:path*"
-    },
-    {
-      "source": "/",
-      "destination": "/static/index.html"
-    },
-    {
-      "source": "/static/(.*)",
-      "destination": "/static/$1"
     }
   ]
 }
