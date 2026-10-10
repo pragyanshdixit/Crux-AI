@@ -138,7 +138,19 @@ Paste a YouTube URL when prompted, review synthesized insights, and ask follow-u
 
 ---
 
-### Option 3: Docker / VPS Self-Hosting
+### Option 3: Hybrid Setup (Vercel Frontend + Render Backend)
+Deploy the heavy Python & FFmpeg processing backend on Render and the frontend UI on Vercel:
+1. **Backend on Render**:
+   - Follow Option 1 above to deploy the backend on Render.
+   - Note your live Render URL: `https://crux-ai-xxxx.onrender.com`.
+2. **Frontend on Vercel**:
+   - Import `pragyanshdixit/Crux-AI` into [Vercel](https://vercel.com).
+   - Vercel uses the included [`vercel.json`](file:///d:/AI%20Video%20Assistant/AI-Video-Assistant/vercel.json) configuration.
+   - In `static/index.html` (or browser console), point `window.CRUX_BACKEND_URL = 'https://crux-ai-xxxx.onrender.com'`.
+
+---
+
+### Option 4: Docker / VPS Self-Hosting
 Run with Docker Compose:
 ```bash
 # Clone the repository

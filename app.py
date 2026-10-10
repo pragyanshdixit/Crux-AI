@@ -19,6 +19,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
@@ -32,6 +33,15 @@ app = FastAPI(
     title="Crux AI API",
     description="Crux AI — Executive intelligence, summaries, decisions, action items, and interactive RAG Q&A from video streams.",
     version="2.1.0"
+)
+
+# Enable CORS for hybrid deployments (e.g. Vercel frontend + Render backend)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # In-memory store for video sessions (stores RAG chain and extracted metadata)

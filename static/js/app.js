@@ -15,6 +15,12 @@
         chatHistory: []
     };
 
+    // Dynamic backend URL resolver (Supports standalone Render or Vercel+Render hybrid)
+    function getApiUrl(endpoint) {
+        const base = (window.CRUX_BACKEND_URL || localStorage.getItem('crux_backend_url') || '').replace(/\/$/, '');
+        return `${base}${endpoint}`;
+    }
+
     // DOM Elements
     const elements = {
         processForm: document.getElementById('processForm'),
@@ -235,7 +241,7 @@
 
         try {
             const userApiKey = getStoredApiKey();
-            const response = await fetch('/api/process', {
+            const response = await fetch(getApiUrl('/api/process'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -458,7 +464,7 @@
 
         try {
             const userApiKey = getStoredApiKey();
-            const response = await fetch('/api/chat', {
+            const response = await fetch(getApiUrl('/api/chat'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -548,7 +554,7 @@ ${state.data.questions}
     async function handlePurgeStorage() {
         elements.purgeBtn.disabled = true;
         try {
-            const res = await fetch('/api/purge-downloads', { method: 'POST' });
+            const res = await fetch(getApiUrl('/api/purge-downloads'), { method: 'POST' });
             const data = await res.json();
             showToast("Temporary audio cache cleared from server.", "success");
         } catch (err) {
@@ -626,7 +632,7 @@ ${state.data.questions}
         elements.keyValidationStatus.textContent = 'Verifying key with Groq Cloud...';
 
         try {
-            const res = await fetch('/api/verify-key', {
+            const res = await fetch(getApiUrl('/api/verify-key'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ api_key: key })
