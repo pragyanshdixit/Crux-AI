@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: crux-ai
+    runtime: docker
+    plan: free
+    region: oregon
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: PORT
+        value: 10000

@@ -111,9 +111,47 @@ Paste a YouTube URL when prompted, review synthesized insights, and ask follow-u
 | :--- | :--- | :--- |
 | `/` | `GET` | Serves the Crux AI Web UI. |
 | `/api/health` | `GET` | Health check endpoint returning server status and active sessions. |
+| `/api/verify-key` | `POST` | Validates a user-provided Groq API key in real-time. |
 | `/api/process` | `POST` | Processes a video URL: downloads, transcribes, extracts insights, and builds RAG index. |
 | `/api/chat` | `POST` | Ask context-grounded questions about a processed video session. |
 | `/api/purge-downloads` | `POST` | Manually purges temporary audio files from server disk. |
+
+---
+
+## 🚀 Production Deployment
+
+### Option 1: Render (Recommended — Free & 1-Click)
+1. Go to [Render.com](https://render.com) and create a **New Web Service**.
+2. Connect your GitHub repository: `https://github.com/pragyanshdixit/Crux-AI.git`.
+3. Select **Docker** environment (Render automatically picks up the [`Dockerfile`](file:///d:/AI%20Video%20Assistant/AI-Video-Assistant/Dockerfile)).
+4. Add environment variables:
+   - `GROQ_API_KEY`: Your Groq Cloud API Key (`gsk_...`)
+5. Click **Deploy Web Service**.
+
+---
+
+### Option 2: Railway
+1. Go to [Railway.app](https://railway.app) and click **New Project** → **Deploy from GitHub repo**.
+2. Select `Crux-AI`.
+3. Add environment variable `GROQ_API_KEY`.
+4. Railway will automatically detect [`nixpacks.toml`](file:///d:/AI%20Video%20Assistant/AI-Video-Assistant/nixpacks.toml) and install FFmpeg, Node.js, and Python 3.11.
+
+---
+
+### Option 3: Docker / VPS Self-Hosting
+Run with Docker Compose:
+```bash
+# Clone the repository
+git clone https://github.com/pragyanshdixit/Crux-AI.git
+cd Crux-AI
+
+# Create .env with your Groq key
+echo "GROQ_API_KEY=gsk_your_key_here" > .env
+
+# Build and start container in detached mode
+docker compose up -d
+```
+Access the application on `http://<your-server-ip>:8000`.
 
 ---
 
