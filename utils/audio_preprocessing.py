@@ -169,15 +169,14 @@ def download_youtube_audio(url: str, output_dir: str = DOWNLOAD_DIR) -> str:
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
-        "js_runtimes": js_runtimes,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "ios", "mweb", "web"],
+                "player_client": ["android", "web"],
                 "player_skip": ["webpage", "configs"]
             }
         },
         "http_headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "com.google.android.youtube/19.29.35 (Linux; U; Android 11) gzip",
             "Accept-Language": "en-US,en;q=0.9",
         }
     }
