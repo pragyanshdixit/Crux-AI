@@ -67,28 +67,78 @@ def purge_all_downloads(target_dir: str = DOWNLOAD_DIR):
 
 
 import re
+import requests
 from urllib.parse import urlparse, parse_qs
 
-def _sanitize_youtube_url(url: str) -> str:
-    """Clean and normalize YouTube URL to avoid query parameter issues."""
+def extract_youtube_video_id(url: str) -> str | None:
+    """Extract 11-character video ID from any YouTube URL."""
     url = url.strip()
-    # Handle youtu.be shortlinks
-    if "youtu.be/" in url:
-        match = re.search(r"youtu\.be/([a-zA-Z0-9_-]{11})", url)
-        if match:
-            return f"https://www.youtube.com/watch?v={match.group(1)}"
-    # Handle youtube.com/shorts/
-    if "youtube.com/shorts/" in url:
-        match = re.search(r"youtube\.com/shorts/([a-zA-Z0-9_-]{11})", url)
-        if match:
-            return f"https://www.youtube.com/watch?v={match.group(1)}"
-    # Handle standard watch URLs with tracking params
+    match = re.search(r'(?:v=|\/|youtu\.be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})', url)
+    if match:
+        return match.group(1)
     if "youtube.com/watch" in url:
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
         if "v" in params:
-            return f"https://www.youtube.com/watch?v={params['v'][0]}"
-    return url
+            return params["v"][0]
+    return None
+
+
+def fetch_youtube_metadata_and_transcript(url: str) -> tuple[str | None, str | None]:
+    """Fetch video title and transcript directly from YouTube APIs in ~0.2s without downloading video.
+    Returns (title, transcript_text) or (title, None) if transcript unavailable.
+    """
+    video_id = extract_youtube_video_id(url)
+    if not video_id:
+        return None, None
+
+    # 1. Fetch official title via oEmbed API (100% reliable, zero auth)
+    title = None
+    try:
+        oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+        res = requests.get(oembed_url, timeout=4)
+        if res.status_code == 200:
+            title = res.json().get("title")
+    except Exception as e:
+        print(f"[Crux AI] oEmbed title lookup skipped: {e}")
+
+    # 2. Fetch transcript via youtube_transcript_api
+    transcript_text = None
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        ytt = YouTubeTranscriptApi() if hasattr(YouTubeTranscriptApi, '__call__') else YouTubeTranscriptApi
+        try:
+            if hasattr(ytt, 'fetch'):
+                items = ytt.fetch(video_id)
+            elif hasattr(YouTubeTranscriptApi, 'get_transcript'):
+                items = YouTubeTranscriptApi.get_transcript(video_id)
+            elif hasattr(ytt, 'get_transcript'):
+                items = ytt.get_transcript(video_id)
+            else:
+                items = ytt.list(video_id).find_transcript(['en', 'en-US', 'en-GB', 'auto']).fetch()
+        except Exception:
+            if hasattr(ytt, 'list'):
+                transcript_list = ytt.list(video_id)
+                items = transcript_list.find_transcript(['en', 'en-US', 'en-GB', 'auto']).fetch()
+            else:
+                raise
+
+        if items:
+            pieces = [item['text'] if isinstance(item, dict) else getattr(item, 'text', str(item)) for item in items]
+            transcript_text = " ".join(pieces).strip()
+            print(f"[Crux AI] Direct transcript acquired for {video_id} ({len(transcript_text)} characters).")
+    except Exception as e:
+        print(f"[Crux AI] Direct transcript unavailable ({e}), falling back to audio download...")
+
+    return title, transcript_text
+
+
+def _sanitize_youtube_url(url: str) -> str:
+    """Clean and normalize YouTube URL to avoid query parameter issues."""
+    video_id = extract_youtube_video_id(url)
+    if video_id:
+        return f"https://www.youtube.com/watch?v={video_id}"
+    return url.strip()
 
 
 def download_youtube_audio(url: str, output_dir: str = DOWNLOAD_DIR) -> str:

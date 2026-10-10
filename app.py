@@ -24,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from utils.audio_preprocessing import process_input, purge_all_downloads
+from utils.audio_preprocessing import process_input, purge_all_downloads, fetch_youtube_metadata_and_transcript
 from core.transcriber import transcribe_chunks
 from core.extractor import extract_all_insights
 from core.rag_engine import build_rag_chain, ask_question
@@ -104,35 +104,51 @@ def process_video(req: ProcessRequest):
     start_time = time.time()
 
     try:
-        # Step 1: Download & Preprocess (ultrafast lightweight mp3)
-        chunks = process_input(url, session_id=session_id)
-        if not chunks:
-            raise HTTPException(status_code=500, detail="Audio extraction failed: No audio chunks were produced.")
-
-        chunk_count = len(chunks)
-
-        # Step 2: Transcribe via Groq Whisper LPU (lightning fast, ~1-2s)
-        transcription = transcribe_chunks(chunks, api_key=effective_api_key)
-        if not transcription.strip():
-            raise HTTPException(status_code=500, detail="Speech-to-text produced an empty transcription.")
-
-        # Step 3: Immediate audio cleanup to prevent disk bloat
+        transcription = None
+        video_title = None
+        chunk_count = 1
         audio_cleaned = False
-        if req.auto_cleanup and hasattr(chunks, "cleanup"):
-            chunks.cleanup()
-            audio_cleaned = True
 
-        # Step 4: High-efficiency unified extraction (1 single API call for all insights)
+        # Fast-Path: Fetch official transcript directly (0.2s, bypasses cloud video download blocks)
+        if url.startswith("http://") or url.startswith("https://"):
+            try:
+                fetched_title, direct_transcript = fetch_youtube_metadata_and_transcript(url)
+                if fetched_title:
+                    video_title = fetched_title
+                if direct_transcript and direct_transcript.strip():
+                    transcription = direct_transcript.strip()
+                    audio_cleaned = True
+                    print(f"[Crux AI] Using direct transcript for video ({len(transcription)} chars)")
+            except Exception as e:
+                print(f"[Crux AI] Direct transcript attempt failed: {e}")
+
+        # Fallback: Download audio and transcribe using Groq Whisper LPU
+        if not transcription:
+            chunks = process_input(url, session_id=session_id)
+            if not chunks:
+                raise HTTPException(status_code=500, detail="Audio extraction failed: No audio chunks were produced.")
+
+            chunk_count = len(chunks)
+            transcription = transcribe_chunks(chunks, api_key=effective_api_key)
+            if not transcription.strip():
+                raise HTTPException(status_code=500, detail="Speech-to-text produced an empty transcription.")
+
+            if req.auto_cleanup and hasattr(chunks, "cleanup"):
+                chunks.cleanup()
+                audio_cleaned = True
+
+        # Extract structured insights (Unified single Groq LLM call)
         insights = extract_all_insights(transcription, api_key=effective_api_key)
+        final_title = video_title or insights.get("title", "Crux AI Video Analysis")
 
-        # Step 5: Build RAG vector store for interactive chat (isolated collection per session)
+        # Build RAG vector store for interactive chat (isolated collection per session)
         rag_chain = build_rag_chain(transcription, session_id=session_id, api_key=effective_api_key)
 
         processing_time = round(time.time() - start_time, 1)
 
         result_data = {
             "session_id": session_id,
-            "title": insights.get("title", "Crux AI Video Analysis"),
+            "title": final_title,
             "summary": insights.get("summary", ""),
             "actionable_items": insights.get("actionable_items", ""),
             "decisions": insights.get("decisions", ""),
