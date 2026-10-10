@@ -1,7 +1,7 @@
 fastapi>=0.115.0
 uvicorn>=0.30.0
 python-dotenv>=1.0.0
-yt-dlp>=2024.8.0
+yt-dlp
 pydub>=0.25.1
 openai-whisper
 torch

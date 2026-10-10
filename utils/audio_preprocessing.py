@@ -66,8 +66,34 @@ def purge_all_downloads(target_dir: str = DOWNLOAD_DIR):
             print(f"Warning: Could not purge {item_path}: {e}")
 
 
+import re
+from urllib.parse import urlparse, parse_qs
+
+def _sanitize_youtube_url(url: str) -> str:
+    """Clean and normalize YouTube URL to avoid query parameter issues."""
+    url = url.strip()
+    # Handle youtu.be shortlinks
+    if "youtu.be/" in url:
+        match = re.search(r"youtu\.be/([a-zA-Z0-9_-]{11})", url)
+        if match:
+            return f"https://www.youtube.com/watch?v={match.group(1)}"
+    # Handle youtube.com/shorts/
+    if "youtube.com/shorts/" in url:
+        match = re.search(r"youtube\.com/shorts/([a-zA-Z0-9_-]{11})", url)
+        if match:
+            return f"https://www.youtube.com/watch?v={match.group(1)}"
+    # Handle standard watch URLs with tracking params
+    if "youtube.com/watch" in url:
+        parsed = urlparse(url)
+        params = parse_qs(parsed.query)
+        if "v" in params:
+            return f"https://www.youtube.com/watch?v={params['v'][0]}"
+    return url
+
+
 def download_youtube_audio(url: str, output_dir: str = DOWNLOAD_DIR) -> str:
     os.makedirs(output_dir, exist_ok=True)
+    clean_url = _sanitize_youtube_url(url)
     output_template = os.path.join(
         output_dir,
         "%(id)s.%(ext)s"
@@ -91,17 +117,23 @@ def download_youtube_audio(url: str, output_dir: str = DOWNLOAD_DIR) -> str:
             }
         ],
         "quiet": True,
+        "no_warnings": True,
         "noplaylist": True,
         "js_runtimes": js_runtimes,
         "extractor_args": {
             "youtube": {
-                "player_client": ["web_creator", "mweb", "android", "ios", "web"]
+                "player_client": ["android", "ios", "mweb", "web"],
+                "player_skip": ["webpage", "configs"]
             }
         },
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+        info = ydl.extract_info(clean_url, download=True)
         filename = ydl.prepare_filename(info)
         # FFmpeg changes the extension to .mp3
         filename = os.path.splitext(filename)[0] + ".mp3"
