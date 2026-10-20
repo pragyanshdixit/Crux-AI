@@ -12,6 +12,7 @@
         sessionId: null,
         data: null,
         isProcessing: false,
+        inputMode: 'url',
         chatHistory: []
     };
 
@@ -66,7 +67,19 @@
         saveApiKeyBtn: document.getElementById('saveApiKeyBtn'),
         keyValidationStatus: document.getElementById('keyValidationStatus'),
         apiKeyStatusText: document.getElementById('apiKeyStatusText'),
-        apiKeyIndicatorDot: document.getElementById('apiKeyIndicatorDot')
+        apiKeyIndicatorDot: document.getElementById('apiKeyIndicatorDot'),
+        // Dual Mode Elements
+        tabModeUrl: document.getElementById('tabModeUrl'),
+        tabModeTranscript: document.getElementById('tabModeTranscript'),
+        modeUrlView: document.getElementById('modeUrlView'),
+        modeTranscriptView: document.getElementById('modeTranscriptView'),
+        transcriptTitle: document.getElementById('transcriptTitle'),
+        directTranscriptInput: document.getElementById('directTranscriptInput'),
+        pasteTranscriptBtn: document.getElementById('pasteTranscriptBtn'),
+        charCount: document.getElementById('charCount'),
+        cloudBlockAlert: document.getElementById('cloudBlockAlert'),
+        btnSwitchToTranscript: document.getElementById('btnSwitchToTranscript'),
+        submitBtnText: document.getElementById('submitBtnText')
     };
 
     // Initialize Event Listeners
@@ -74,12 +87,35 @@
         // Form Submit
         elements.processForm.addEventListener('submit', handleProcessSubmit);
 
-        // Paste button
+        // Input Mode Tabs
+        if (elements.tabModeUrl) {
+            elements.tabModeUrl.addEventListener('click', () => switchInputMode('url'));
+        }
+        if (elements.tabModeTranscript) {
+            elements.tabModeTranscript.addEventListener('click', () => switchInputMode('transcript'));
+        }
+        if (elements.btnSwitchToTranscript) {
+            elements.btnSwitchToTranscript.addEventListener('click', () => {
+                switchInputMode('transcript');
+                if (elements.directTranscriptInput) elements.directTranscriptInput.focus();
+            });
+        }
+
+        // Paste buttons
         elements.pasteBtn.addEventListener('click', handlePaste);
+        if (elements.pasteTranscriptBtn) {
+            elements.pasteTranscriptBtn.addEventListener('click', handlePasteTranscript);
+        }
+
+        // Live Character & Word Count for Transcript Textarea
+        if (elements.directTranscriptInput) {
+            elements.directTranscriptInput.addEventListener('input', updateCharCount);
+        }
 
         // Sample chips
         elements.sampleChips.forEach(chip => {
             chip.addEventListener('click', (e) => {
+                switchInputMode('url');
                 const url = chip.getAttribute('data-url');
                 if (url) {
                     elements.videoUrl.value = url;
@@ -225,11 +261,77 @@
         }
     }
 
+    // Switch between YouTube URL and Direct Transcript Input Modes
+    function switchInputMode(mode) {
+        state.inputMode = mode;
+        if (mode === 'transcript') {
+            if (elements.tabModeTranscript) elements.tabModeTranscript.classList.add('active');
+            if (elements.tabModeUrl) elements.tabModeUrl.classList.remove('active');
+            if (elements.modeTranscriptView) elements.modeTranscriptView.classList.remove('hidden');
+            if (elements.modeUrlView) elements.modeUrlView.classList.add('hidden');
+            if (elements.submitBtnText) elements.submitBtnText.textContent = 'Synthesize Insights';
+        } else {
+            if (elements.tabModeUrl) elements.tabModeUrl.classList.add('active');
+            if (elements.tabModeTranscript) elements.tabModeTranscript.classList.remove('active');
+            if (elements.modeUrlView) elements.modeUrlView.classList.remove('hidden');
+            if (elements.modeTranscriptView) elements.modeTranscriptView.classList.add('hidden');
+            if (elements.submitBtnText) elements.submitBtnText.textContent = 'Extract Intelligence';
+        }
+    }
+
+    function updateCharCount() {
+        if (!elements.directTranscriptInput || !elements.charCount) return;
+        const text = elements.directTranscriptInput.value.trim();
+        const chars = text.length;
+        const words = text ? text.split(/\s+/).length : 0;
+        elements.charCount.textContent = `${chars.toLocaleString()} chars • ~${words.toLocaleString()} words`;
+    }
+
+    async function handlePasteTranscript() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && elements.directTranscriptInput) {
+                elements.directTranscriptInput.value = text;
+                updateCharCount();
+                showToast("Transcript pasted from clipboard!", "success");
+            }
+        } catch (err) {
+            showToast("Clipboard access denied. Please press Ctrl+V to paste.", "info");
+        }
+    }
+
     // Process Video Form Submit
     async function handleProcessSubmit(e) {
         e.preventDefault();
-        const url = elements.videoUrl.value.trim();
-        if (!url) return;
+        
+        let requestPayload = {};
+        const userApiKey = getStoredApiKey();
+
+        if (state.inputMode === 'transcript') {
+            const transcript = elements.directTranscriptInput ? elements.directTranscriptInput.value.trim() : '';
+            if (!transcript) {
+                showToast("Please enter or paste a transcript to analyze.", "error");
+                return;
+            }
+            const title = elements.transcriptTitle ? elements.transcriptTitle.value.trim() : '';
+            requestPayload = {
+                transcript: transcript,
+                title: title || null,
+                auto_cleanup: false,
+                api_key: userApiKey || null
+            };
+        } else {
+            const url = elements.videoUrl.value.trim();
+            if (!url) {
+                showToast("Please paste a valid YouTube URL.", "error");
+                return;
+            }
+            requestPayload = {
+                url: url,
+                auto_cleanup: elements.autoCleanup.checked,
+                api_key: userApiKey || null
+            };
+        }
 
         state.isProcessing = true;
         elements.submitBtn.disabled = true;
@@ -237,18 +339,22 @@
         elements.dashboardSection.classList.add('hidden');
         elements.progressSection.classList.remove('hidden');
 
+        // Update progress description depending on mode
+        if (state.inputMode === 'transcript') {
+            elements.progressStepTitle.textContent = "Analyzing Transcript Context...";
+            elements.progressStepDesc.textContent = "Direct text loaded • synthesizing executive intelligence via Groq LPU";
+        } else {
+            elements.progressStepTitle.textContent = "Processing Audio Pipeline...";
+            elements.progressStepDesc.textContent = "Connecting to YouTube stream & Groq Whisper LPU engine";
+        }
+
         startStepper();
 
         try {
-            const userApiKey = getStoredApiKey();
             const response = await fetch(getApiUrl('/api/process'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    url: url,
-                    auto_cleanup: elements.autoCleanup.checked,
-                    api_key: userApiKey || null
-                })
+                body: JSON.stringify(requestPayload)
             });
 
             const data = await response.json();
@@ -262,11 +368,23 @@
             state.data = data;
 
             renderDashboard(data);
-            showToast("Video analyzed successfully!", "success");
+            showToast("Analysis synthesized successfully!", "success");
 
         } catch (err) {
             stopStepper();
-            showToast(err.message, "error");
+            const errLower = (err.message || '').toLowerCase();
+            const isCloudBlock = errLower.includes("restricted automated cloud scraping") || 
+                                 errLower.includes("player response") || 
+                                 errLower.includes("blocking requests") || 
+                                 errLower.includes("ipblocked") || 
+                                 errLower.includes("requestblocked");
+
+            if (isCloudBlock && elements.cloudBlockAlert) {
+                elements.cloudBlockAlert.classList.remove('hidden');
+                showToast("YouTube cloud restriction detected. Try Paste Transcript mode!", "error");
+            } else {
+                showToast(err.message, "error");
+            }
             elements.progressSection.classList.add('hidden');
             elements.heroSection.classList.remove('hidden');
         } finally {

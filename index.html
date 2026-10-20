@@ -66,32 +66,124 @@
                 Paste any YouTube URL to synthesize structured executive summaries, prioritized action checklists, strategic decisions, and chat interactively with the video context.
             </p>
 
-            <!-- URL Input Card -->
+            <!-- URL / Transcript Input Card -->
             <div class="glass-card input-card">
-                <form id="processForm" class="input-form">
-                    <div class="input-wrapper">
-                        <div class="input-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-                                <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+                <!-- Mode Switcher -->
+                <div class="input-card-header">
+                    <div class="input-mode-tabs" role="tablist">
+                        <button type="button" class="input-mode-tab active" id="tabModeUrl" role="tab" aria-selected="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                             </svg>
-                        </div>
-                        <input 
-                            type="url" 
-                            id="videoUrl" 
-                            placeholder="Paste YouTube link (e.g. https://youtu.be/...)" 
-                            required 
-                            autocomplete="off"
-                            spellcheck="false"
-                        >
-                        <button type="button" class="btn-paste" id="pasteBtn" title="Paste from clipboard">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-                            <span>Paste</span>
+                            <span>YouTube Link</span>
                         </button>
+                        <button type="button" class="input-mode-tab" id="tabModeTranscript" role="tab" aria-selected="false">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            <span>Paste Transcript / Notes</span>
+                            <span class="badge-proof">100% Cloud-Proof</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cloud Block Recovery Alert -->
+                <div class="cloud-block-alert hidden" id="cloudBlockAlert">
+                    <div class="alert-icon-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">YouTube Cloud IP Restriction Detected</div>
+                        <div class="alert-desc">
+                            YouTube is restricting automated cloud scraping for this video on the server. You can analyze it immediately:
+                        </div>
+                        <div class="alert-steps">
+                            <span>1. Open the video on YouTube</span>
+                            <span>2. Click <strong>&quot;... More&quot; &rarr; &quot;Show transcript&quot;</strong></span>
+                            <span>3. Copy and paste it here</span>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnSwitchToTranscript">
+                            Switch to Paste Transcript &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <form id="processForm" class="input-form">
+                    <!-- Mode 1: YouTube URL View -->
+                    <div class="mode-view" id="modeUrlView">
+                        <div class="input-wrapper">
+                            <div class="input-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+                                    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+                                </svg>
+                            </div>
+                            <input 
+                                type="url" 
+                                id="videoUrl" 
+                                placeholder="Paste YouTube link (e.g. https://youtu.be/...)" 
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+                            <button type="button" class="btn-paste" id="pasteBtn" title="Paste from clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                                <span>Paste</span>
+                            </button>
+                        </div>
+
+                        <!-- Quick Samples -->
+                        <div class="samples-row">
+                            <span class="samples-label">Quick test:</span>
+                            <button type="button" class="sample-chip" data-url="https://youtu.be/KOpTWx1Eou4?si=NI-F8lBlC5kE_haK">
+                                <span class="chip-dot"></span> The Most Interesting Hack
+                            </button>
+                            <button type="button" class="sample-chip" data-url="https://www.youtube.com/watch?v=kqtD5dpn9C8">
+                                <span class="chip-dot"></span> Python in 100 Seconds
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mode 2: Direct Transcript / Notes View -->
+                    <div class="mode-view hidden" id="modeTranscriptView">
+                        <div class="input-wrapper title-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="transcriptTitle" 
+                                placeholder="Topic, Video Title, or Meeting Subject (optional)" 
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+                        </div>
+                        <div class="transcript-box-wrapper">
+                            <div class="transcript-toolbar">
+                                <span class="toolbar-hint">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    Tip: On YouTube, click <strong>&quot;... More&quot; &rarr; &quot;Show transcript&quot;</strong>, copy and paste here
+                                </span>
+                                <button type="button" class="btn-paste-sm" id="pasteTranscriptBtn" title="Paste text from clipboard">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                                    <span>Paste Text</span>
+                                </button>
+                            </div>
+                            <textarea 
+                                id="directTranscriptInput" 
+                                class="transcript-textarea" 
+                                placeholder="Paste YouTube transcript, Zoom notes, podcast transcription, or meeting minutes here..." 
+                                rows="6"
+                                spellcheck="false"
+                            ></textarea>
+                            <div class="transcript-footer">
+                                <span class="char-count" id="charCount">0 characters</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-footer">
-                        <div class="toggle-group" title="Deletes temporary audio chunks right after transcription to prevent disk full issues on cloud deployments">
+                        <div class="toggle-group" id="autoCleanupGroup" title="Deletes temporary audio chunks right after transcription to prevent disk full issues on cloud deployments">
                             <label class="switch">
                                 <input type="checkbox" id="autoCleanup" checked>
                                 <span class="slider round"></span>
@@ -103,22 +195,11 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary" id="submitBtn">
-                            <span class="btn-text">Extract Intelligence</span>
+                            <span class="btn-text" id="submitBtnText">Extract Intelligence</span>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                         </button>
                     </div>
                 </form>
-
-                <!-- Quick Samples -->
-                <div class="samples-row">
-                    <span class="samples-label">Quick test:</span>
-                    <button class="sample-chip" data-url="https://youtu.be/2kD9v7Q3vec?si=t_KTb-65vIwMcMAt">
-                        <span class="chip-dot"></span> How to Use Jev AI
-                    </button>
-                    <button class="sample-chip" data-url="https://youtu.be/T-D1OfcDW1M?si=CK2ISohhv6o8g8FZ">
-                        <span class="chip-dot"></span> Product AI Demo
-                    </button>
-                </div>
             </div>
         </section>
 

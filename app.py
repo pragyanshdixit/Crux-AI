@@ -49,7 +49,9 @@ SESSIONS: dict[str, dict] = {}
 
 
 class ProcessRequest(BaseModel):
-    url: str
+    url: Optional[str] = None
+    transcript: Optional[str] = None
+    title: Optional[str] = None
     auto_cleanup: bool = True
     api_key: Optional[str] = None
 
@@ -89,9 +91,12 @@ def verify_api_key(payload: dict):
 
 @app.post("/api/process")
 def process_video(req: ProcessRequest):
-    url = req.url.strip()
-    if not url:
-        raise HTTPException(status_code=400, detail="Please provide a valid YouTube URL.")
+    url = (req.url or "").strip()
+    direct_transcript = (req.transcript or "").strip()
+    custom_title = (req.title or "").strip()
+
+    if not url and not direct_transcript:
+        raise HTTPException(status_code=400, detail="Please provide either a YouTube link or paste a transcript.")
 
     effective_api_key = (req.api_key.strip() if req.api_key else None) or os.getenv("GROQ_API_KEY")
     if not effective_api_key:
@@ -105,37 +110,42 @@ def process_video(req: ProcessRequest):
 
     try:
         transcription = None
-        video_title = None
+        video_title = custom_title or None
         chunk_count = 1
         audio_cleaned = False
 
-        # Fast-Path: Fetch official transcript directly (0.2s, bypasses cloud video download blocks)
-        if url.startswith("http://") or url.startswith("https://"):
-            try:
-                fetched_title, direct_transcript = fetch_youtube_metadata_and_transcript(url)
-                if fetched_title:
-                    video_title = fetched_title
-                if direct_transcript and direct_transcript.strip():
-                    transcription = direct_transcript.strip()
+        if direct_transcript:
+            transcription = direct_transcript
+            audio_cleaned = True
+            print(f"[Crux AI] Using direct user-provided transcript ({len(transcription)} chars)")
+        else:
+            # Fast-Path: Fetch official transcript directly (0.2s, bypasses cloud video download blocks)
+            if url.startswith("http://") or url.startswith("https://"):
+                try:
+                    fetched_title, direct_transcript_res = fetch_youtube_metadata_and_transcript(url)
+                    if fetched_title and not video_title:
+                        video_title = fetched_title
+                    if direct_transcript_res and direct_transcript_res.strip():
+                        transcription = direct_transcript_res.strip()
+                        audio_cleaned = True
+                        print(f"[Crux AI] Using direct transcript for video ({len(transcription)} chars)")
+                except Exception as e:
+                    print(f"[Crux AI] Direct transcript attempt failed: {e}")
+
+            # Fallback: Download audio and transcribe using Groq Whisper LPU
+            if not transcription:
+                chunks = process_input(url, session_id=session_id)
+                if not chunks:
+                    raise HTTPException(status_code=500, detail="Audio extraction failed: No audio chunks were produced.")
+
+                chunk_count = len(chunks)
+                transcription = transcribe_chunks(chunks, api_key=effective_api_key)
+                if not transcription.strip():
+                    raise HTTPException(status_code=500, detail="Speech-to-text produced an empty transcription.")
+
+                if req.auto_cleanup and hasattr(chunks, "cleanup"):
+                    chunks.cleanup()
                     audio_cleaned = True
-                    print(f"[Crux AI] Using direct transcript for video ({len(transcription)} chars)")
-            except Exception as e:
-                print(f"[Crux AI] Direct transcript attempt failed: {e}")
-
-        # Fallback: Download audio and transcribe using Groq Whisper LPU
-        if not transcription:
-            chunks = process_input(url, session_id=session_id)
-            if not chunks:
-                raise HTTPException(status_code=500, detail="Audio extraction failed: No audio chunks were produced.")
-
-            chunk_count = len(chunks)
-            transcription = transcribe_chunks(chunks, api_key=effective_api_key)
-            if not transcription.strip():
-                raise HTTPException(status_code=500, detail="Speech-to-text produced an empty transcription.")
-
-            if req.auto_cleanup and hasattr(chunks, "cleanup"):
-                chunks.cleanup()
-                audio_cleaned = True
 
         # Extract structured insights (Unified single Groq LLM call)
         insights = extract_all_insights(transcription, api_key=effective_api_key)
@@ -176,7 +186,15 @@ def process_video(req: ProcessRequest):
                 chunks.cleanup()
             except Exception:
                 pass
-        raise HTTPException(status_code=500, detail=str(e))
+        err_msg = str(e)
+        err_lower = err_msg.lower()
+        if any(keyword in err_lower for keyword in ["player response", "blocking requests", "sign in to confirm", "bot", "ipblocked", "requestblocked", "429"]):
+            detail_msg = (
+                "YouTube has restricted automated cloud scraping for this video on this server IP. "
+                "You can process it immediately: switch to the 'Paste Transcript' tab (click '... More' > 'Show transcript' under the YouTube video) and paste it here!"
+            )
+            raise HTTPException(status_code=422, detail=detail_msg)
+        raise HTTPException(status_code=500, detail=err_msg)
 
 
 @app.post("/api/chat")

@@ -1518,3 +1518,206 @@ input:checked + .slider:before {
         justify-content: flex-end;
     }
 }
+
+/* ==========================================================================
+   Dual Mode Switcher & Direct Transcript Studio Input
+   ========================================================================== */
+.input-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.input-mode-tabs {
+    display: flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: var(--radius-sm);
+    gap: 4px;
+    border: 1px solid var(--border-light);
+}
+
+.input-mode-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.input-mode-tab:hover {
+    color: var(--text-main);
+}
+
+.input-mode-tab.active {
+    background: #ffffff;
+    color: var(--primary);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.badge-proof {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: var(--radius-full);
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    letter-spacing: 0.02em;
+}
+
+/* Cloud Block Alert */
+.cloud-block-alert {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    border-radius: var(--radius-md);
+    margin-bottom: 18px;
+    animation: fadeIn 0.3s ease;
+}
+
+.alert-icon-box {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: #fef3c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #92400e;
+    margin-bottom: 4px;
+}
+
+.alert-desc {
+    font-size: 13px;
+    color: #78350f;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.alert-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12.5px;
+    color: #78350f;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: rgba(254, 243, 199, 0.6);
+    border-radius: 6px;
+}
+
+/* Transcript Box */
+.title-input-wrapper {
+    margin-bottom: 12px;
+}
+
+.title-input-wrapper input {
+    font-weight: 500;
+}
+
+.transcript-box-wrapper {
+    background: #f8fafc;
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.transcript-box-wrapper:focus-within {
+    background: #ffffff;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.transcript-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+}
+
+.toolbar-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+}
+
+.btn-paste-sm {
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-xs);
+}
+
+.btn-paste-sm:hover {
+    background: var(--bg-base);
+    color: var(--text-main);
+    border-color: var(--border-medium);
+}
+
+.transcript-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-main);
+    resize: vertical;
+    min-height: 120px;
+}
+
+.transcript-textarea::placeholder {
+    color: var(--text-dim);
+}
+
+.transcript-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 6px 14px;
+    background: transparent;
+    font-size: 11.5px;
+    color: var(--text-dim);
+}

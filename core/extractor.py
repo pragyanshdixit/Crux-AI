@@ -15,7 +15,7 @@ from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 load_dotenv()
 
 
-def get_model(api_key: str | None = None, max_tokens: int = 2048, temperature: float = 0.1, json_mode: bool = False):
+def get_model(api_key: str | None = None, max_tokens: int = 4096, temperature: float = 0.1, json_mode: bool = False):
     effective_key = api_key or os.getenv("GROQ_API_KEY")
     if not effective_key:
         raise ValueError("Groq API key is missing. Please provide your API key in settings or set GROQ_API_KEY.")
@@ -25,7 +25,7 @@ def get_model(api_key: str | None = None, max_tokens: int = 2048, temperature: f
         kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
 
     return ChatGroq(
-        model="openai/gpt-oss-20b",
+        model="openai/gpt-oss-120b",
         api_key=effective_key,
         max_tokens=max_tokens,
         temperature=temperature,
@@ -53,7 +53,7 @@ def extract_all_insights(text: str, api_key: str | None = None) -> dict:
     Extracts Title, Summary, Action Items, Decisions, and Questions in a SINGLE API call,
     saving up to 85% on tokens, API roundtrips, and latency.
     """
-    model = get_model(api_key=api_key, max_tokens=2048, temperature=0.1, json_mode=True)
+    model = get_model(api_key=api_key, max_tokens=4096, temperature=0.1, json_mode=True)
 
     system_prompt = (
         "You are Crux AI, an elite executive intelligence analyst.\n"

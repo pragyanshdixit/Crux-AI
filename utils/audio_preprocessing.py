@@ -156,6 +156,20 @@ def download_youtube_audio(url: str, output_dir: str = DOWNLOAD_DIR) -> str:
     elif shutil.which("deno"):
         js_runtimes["deno"] = {}
 
+    # Check for optional cookies from environment or local cookies.txt
+    cookiefile = None
+    env_cookies = os.getenv("YOUTUBE_COOKIES", "").strip()
+    if env_cookies:
+        cookie_path = os.path.join(output_dir, "yt_cookies.txt")
+        try:
+            with open(cookie_path, "w", encoding="utf-8") as cf:
+                cf.write(env_cookies)
+            cookiefile = cookie_path
+        except Exception as ce:
+            print(f"[Crux AI] Could not write cookies file: {ce}")
+    elif os.path.isfile("cookies.txt"):
+        cookiefile = "cookies.txt"
+
     ydl_opts = {
         "format": "ba[ext=m4a]/ba[ext=mp3]/bestaudio/best",
         "outtmpl": output_template,
@@ -169,17 +183,15 @@ def download_youtube_audio(url: str, output_dir: str = DOWNLOAD_DIR) -> str:
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
+        "js_runtimes": js_runtimes,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "web"],
-                "player_skip": ["webpage", "configs"]
+                "player_client": ["visionos", "ios", "android", "web"]
             }
-        },
-        "http_headers": {
-            "User-Agent": "com.google.android.youtube/19.29.35 (Linux; U; Android 11) gzip",
-            "Accept-Language": "en-US,en;q=0.9",
         }
     }
+    if cookiefile:
+        ydl_opts["cookiefile"] = cookiefile
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(clean_url, download=True)
