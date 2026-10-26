@@ -13,12 +13,16 @@
         data: null,
         isProcessing: false,
         inputMode: 'url',
+        selectedFile: null,
         chatHistory: []
     };
 
     // Dynamic backend URL resolver (Supports standalone Render or Vercel+Render hybrid)
     function getApiUrl(endpoint) {
-        const base = (window.CRUX_BACKEND_URL || localStorage.getItem('crux_backend_url') || '').replace(/\/$/, '');
+        let base = (window.CRUX_BACKEND_URL || localStorage.getItem('crux_backend_url') || '').replace(/\/$/, '');
+        if (!base && window.location.hostname.includes('vercel.app')) {
+            base = 'https://crux-ai-gaj7.onrender.com';
+        }
         return `${base}${endpoint}`;
     }
 
@@ -68,11 +72,23 @@
         keyValidationStatus: document.getElementById('keyValidationStatus'),
         apiKeyStatusText: document.getElementById('apiKeyStatusText'),
         apiKeyIndicatorDot: document.getElementById('apiKeyIndicatorDot'),
-        // Dual Mode Elements
+        // Multi Mode Elements
         tabModeUrl: document.getElementById('tabModeUrl'),
+        tabModeUpload: document.getElementById('tabModeUpload'),
         tabModeTranscript: document.getElementById('tabModeTranscript'),
         modeUrlView: document.getElementById('modeUrlView'),
+        modeUploadView: document.getElementById('modeUploadView'),
         modeTranscriptView: document.getElementById('modeTranscriptView'),
+        uploadCustomTitle: document.getElementById('uploadCustomTitle'),
+        dropzoneBox: document.getElementById('dropzoneBox'),
+        localFileInput: document.getElementById('localFileInput'),
+        dropzoneEmptyState: document.getElementById('dropzoneEmptyState'),
+        selectedFileCard: document.getElementById('selectedFileCard'),
+        selectedFileName: document.getElementById('selectedFileName'),
+        selectedFileSize: document.getElementById('selectedFileSize'),
+        selectedFileIconBox: document.getElementById('selectedFileIconBox'),
+        removeSelectedFileBtn: document.getElementById('removeSelectedFileBtn'),
+        btnSwitchToUpload: document.getElementById('btnSwitchToUpload'),
         transcriptTitle: document.getElementById('transcriptTitle'),
         directTranscriptInput: document.getElementById('directTranscriptInput'),
         pasteTranscriptBtn: document.getElementById('pasteTranscriptBtn'),
@@ -91,6 +107,9 @@
         if (elements.tabModeUrl) {
             elements.tabModeUrl.addEventListener('click', () => switchInputMode('url'));
         }
+        if (elements.tabModeUpload) {
+            elements.tabModeUpload.addEventListener('click', () => switchInputMode('upload'));
+        }
         if (elements.tabModeTranscript) {
             elements.tabModeTranscript.addEventListener('click', () => switchInputMode('transcript'));
         }
@@ -98,6 +117,61 @@
             elements.btnSwitchToTranscript.addEventListener('click', () => {
                 switchInputMode('transcript');
                 if (elements.directTranscriptInput) elements.directTranscriptInput.focus();
+            });
+        }
+        if (elements.btnSwitchToUpload) {
+            elements.btnSwitchToUpload.addEventListener('click', () => {
+                switchInputMode('upload');
+                if (elements.dropzoneBox) elements.dropzoneBox.focus();
+            });
+        }
+
+        // Local File Dropzone
+        if (elements.dropzoneBox && elements.localFileInput) {
+            elements.dropzoneBox.addEventListener('click', (e) => {
+                if (e.target.closest('#removeSelectedFileBtn')) return;
+                elements.localFileInput.click();
+            });
+
+            elements.dropzoneBox.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    elements.localFileInput.click();
+                }
+            });
+
+            elements.localFileInput.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (file) handleFileSelected(file);
+            });
+
+            ['dragenter', 'dragover'].forEach(name => {
+                elements.dropzoneBox.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    elements.dropzoneBox.classList.add('dragover');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(name => {
+                elements.dropzoneBox.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    elements.dropzoneBox.classList.remove('dragover');
+                });
+            });
+
+            elements.dropzoneBox.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const file = dt && dt.files && dt.files[0];
+                if (file) handleFileSelected(file);
+            });
+        }
+
+        if (elements.removeSelectedFileBtn) {
+            elements.removeSelectedFileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                clearSelectedFile();
             });
         }
 
@@ -261,22 +335,78 @@
         }
     }
 
-    // Switch between YouTube URL and Direct Transcript Input Modes
+    // Allowed extensions for media uploads
+    const ALLOWED_MEDIA_EXTS = ['.mp4', '.mkv', '.mov', '.webm', '.avi', '.wmv', '.m4v', '.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac'];
+
+    function formatBytes(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function handleFileSelected(file) {
+        if (!file) return;
+        const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
+        if (!ALLOWED_MEDIA_EXTS.includes(ext)) {
+            showToast(`Unsupported format '${ext}'. Allowed: MP4, MOV, MKV, WebM, MP3, WAV, M4A, etc.`, "error");
+            return;
+        }
+
+        state.selectedFile = file;
+        if (elements.selectedFileName) elements.selectedFileName.textContent = file.name;
+        if (elements.selectedFileSize) elements.selectedFileSize.textContent = formatBytes(file.size);
+
+        // Update icon based on audio vs video
+        const isAudio = ['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac'].includes(ext) || (file.type && file.type.startsWith('audio/'));
+        if (elements.selectedFileIconBox) {
+            elements.selectedFileIconBox.innerHTML = isAudio
+                ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`
+                : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`;
+        }
+
+        if (elements.dropzoneEmptyState) elements.dropzoneEmptyState.classList.add('hidden');
+        if (elements.selectedFileCard) elements.selectedFileCard.classList.remove('hidden');
+
+        // Optional title default placeholder
+        if (elements.uploadCustomTitle && !elements.uploadCustomTitle.value.trim()) {
+            const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[_\-]+/g, ' ').trim();
+            elements.uploadCustomTitle.placeholder = `e.g. ${cleanName}`;
+        }
+
+        showToast(`Loaded "${file.name}" (${formatBytes(file.size)})`, "info");
+    }
+
+    function clearSelectedFile() {
+        state.selectedFile = null;
+        if (elements.localFileInput) elements.localFileInput.value = '';
+        if (elements.selectedFileCard) elements.selectedFileCard.classList.add('hidden');
+        if (elements.dropzoneEmptyState) elements.dropzoneEmptyState.classList.remove('hidden');
+    }
+
+    // Switch between YouTube URL, Local Upload, and Direct Transcript Input Modes
     function switchInputMode(mode) {
         state.inputMode = mode;
-        if (mode === 'transcript') {
-            if (elements.tabModeTranscript) elements.tabModeTranscript.classList.add('active');
-            if (elements.tabModeUrl) elements.tabModeUrl.classList.remove('active');
-            if (elements.modeTranscriptView) elements.modeTranscriptView.classList.remove('hidden');
-            if (elements.modeUrlView) elements.modeUrlView.classList.add('hidden');
-            if (elements.submitBtnText) elements.submitBtnText.textContent = 'Synthesize Insights';
-        } else {
-            if (elements.tabModeUrl) elements.tabModeUrl.classList.add('active');
-            if (elements.tabModeTranscript) elements.tabModeTranscript.classList.remove('active');
-            if (elements.modeUrlView) elements.modeUrlView.classList.remove('hidden');
-            if (elements.modeTranscriptView) elements.modeTranscriptView.classList.add('hidden');
-            if (elements.submitBtnText) elements.submitBtnText.textContent = 'Extract Intelligence';
-        }
+        const modes = [
+            { id: 'url', tab: elements.tabModeUrl, view: elements.modeUrlView, btnText: 'Extract Intelligence' },
+            { id: 'upload', tab: elements.tabModeUpload, view: elements.modeUploadView, btnText: 'Process & Synthesize' },
+            { id: 'transcript', tab: elements.tabModeTranscript, view: elements.modeTranscriptView, btnText: 'Synthesize Insights' }
+        ];
+
+        modes.forEach(m => {
+            const isActive = m.id === mode;
+            if (m.tab) {
+                m.tab.classList.toggle('active', isActive);
+                m.tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            }
+            if (m.view) {
+                m.view.classList.toggle('hidden', !isActive);
+            }
+            if (isActive && elements.submitBtnText) {
+                elements.submitBtnText.textContent = m.btnText;
+            }
+        });
     }
 
     function updateCharCount() {
@@ -307,7 +437,12 @@
         let requestPayload = {};
         const userApiKey = getStoredApiKey();
 
-        if (state.inputMode === 'transcript') {
+        if (state.inputMode === 'upload') {
+            if (!state.selectedFile) {
+                showToast("Please choose or drag-and-drop a video/audio file to upload.", "error");
+                return;
+            }
+        } else if (state.inputMode === 'transcript') {
             const transcript = elements.directTranscriptInput ? elements.directTranscriptInput.value.trim() : '';
             if (!transcript) {
                 showToast("Please enter or paste a transcript to analyze.", "error");
@@ -340,7 +475,10 @@
         elements.progressSection.classList.remove('hidden');
 
         // Update progress description depending on mode
-        if (state.inputMode === 'transcript') {
+        if (state.inputMode === 'upload') {
+            elements.progressStepTitle.textContent = "Processing Local Media Pipeline...";
+            elements.progressStepDesc.textContent = "Extracting audio container • Groq Whisper LPU speech-to-text • LLM synthesis";
+        } else if (state.inputMode === 'transcript') {
             elements.progressStepTitle.textContent = "Analyzing Transcript Context...";
             elements.progressStepDesc.textContent = "Direct text loaded • synthesizing executive intelligence via Groq LPU";
         } else {
@@ -351,11 +489,26 @@
         startStepper();
 
         try {
-            const response = await fetch(getApiUrl('/api/process'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestPayload)
-            });
+            let response;
+            if (state.inputMode === 'upload') {
+                const formData = new FormData();
+                formData.append('file', state.selectedFile);
+                const customTitle = elements.uploadCustomTitle ? elements.uploadCustomTitle.value.trim() : '';
+                if (customTitle) formData.append('title', customTitle);
+                formData.append('auto_cleanup', elements.autoCleanup.checked ? 'true' : 'false');
+                if (userApiKey) formData.append('api_key', userApiKey);
+
+                response = await fetch(getApiUrl('/api/upload-process'), {
+                    method: 'POST',
+                    body: formData
+                });
+            } else {
+                response = await fetch(getApiUrl('/api/process'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestPayload)
+                });
+            }
 
             const data = await response.json();
             stopStepper();
@@ -781,6 +934,13 @@ ${state.data.questions}
         state.data = null;
         state.sessionId = null;
         elements.videoUrl.value = '';
+        if (elements.uploadCustomTitle) elements.uploadCustomTitle.value = '';
+        if (elements.transcriptTitle) elements.transcriptTitle.value = '';
+        if (elements.directTranscriptInput) {
+            elements.directTranscriptInput.value = '';
+            updateCharCount();
+        }
+        clearSelectedFile();
         elements.dashboardSection.classList.add('hidden');
         elements.progressSection.classList.add('hidden');
         elements.heroSection.classList.remove('hidden');

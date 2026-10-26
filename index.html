@@ -66,7 +66,7 @@
                 Paste any YouTube URL to synthesize structured executive summaries, prioritized action checklists, strategic decisions, and chat interactively with the video context.
             </p>
 
-            <!-- URL / Transcript Input Card -->
+            <!-- URL / Transcript / Upload Input Card -->
             <div class="glass-card input-card">
                 <!-- Mode Switcher -->
                 <div class="input-card-header">
@@ -77,6 +77,15 @@
                                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                             </svg>
                             <span>YouTube Link</span>
+                        </button>
+                        <button type="button" class="input-mode-tab" id="tabModeUpload" role="tab" aria-selected="false">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span>Upload Video / Audio</span>
+                            <span class="badge-proof badge-upload">Local File</span>
                         </button>
                         <button type="button" class="input-mode-tab" id="tabModeTranscript" role="tab" aria-selected="false">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -104,11 +113,16 @@
                         <div class="alert-steps">
                             <span>1. Open the video on YouTube</span>
                             <span>2. Click <strong>&quot;... More&quot; &rarr; &quot;Show transcript&quot;</strong></span>
-                            <span>3. Copy and paste it here</span>
+                            <span>3. Copy and paste it here, or upload your downloaded file directly</span>
                         </div>
-                        <button type="button" class="btn btn-secondary btn-sm" id="btnSwitchToTranscript">
-                            Switch to Paste Transcript &rarr;
-                        </button>
+                        <div class="alert-actions">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnSwitchToTranscript">
+                                Switch to Paste Transcript &rarr;
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnSwitchToUpload">
+                                Upload Local File &rarr;
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -147,7 +161,78 @@
                         </div>
                     </div>
 
-                    <!-- Mode 2: Direct Transcript / Notes View -->
+                    <!-- Mode 2: Upload Local Video / Audio View -->
+                    <div class="mode-view hidden" id="modeUploadView">
+                        <div class="input-wrapper title-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="uploadCustomTitle" 
+                                placeholder="Custom Video Title or Meeting Topic (optional)" 
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+                        </div>
+                        <div class="dropzone-box" id="dropzoneBox" tabindex="0" role="button" aria-label="Upload video or audio file">
+                            <input 
+                                type="file" 
+                                id="localFileInput" 
+                                accept=".mp4,.mkv,.mov,.webm,.avi,.wmv,.m4v,.mp3,.wav,.m4a,.ogg,.flac,.aac,video/*,audio/*"
+                                class="hidden-file-input"
+                            >
+                            
+                            <!-- Empty State -->
+                            <div class="dropzone-empty-state" id="dropzoneEmptyState">
+                                <div class="upload-icon-circle">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                </div>
+                                <div class="dropzone-title">
+                                    <strong>Drop your video or audio here</strong>, or <span class="browse-link">browse files</span>
+                                </div>
+                                <div class="dropzone-sub">
+                                    Fast local upload • Zero YouTube rate-limits • Whisper LPU pipeline
+                                </div>
+                                <div class="format-chips">
+                                    <span class="format-chip">MP4</span>
+                                    <span class="format-chip">MOV</span>
+                                    <span class="format-chip">MKV</span>
+                                    <span class="format-chip">WebM</span>
+                                    <span class="format-chip">MP3</span>
+                                    <span class="format-chip">WAV</span>
+                                    <span class="format-chip">M4A</span>
+                                </div>
+                            </div>
+
+                            <!-- Selected File State -->
+                            <div class="selected-file-card hidden" id="selectedFileCard">
+                                <div class="file-icon-box" id="selectedFileIconBox">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="23 7 16 12 23 17 23 7"/>
+                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                    </svg>
+                                </div>
+                                <div class="file-info-col">
+                                    <div class="file-name" id="selectedFileName">video.mp4</div>
+                                    <div class="file-meta">
+                                        <span id="selectedFileSize">0 MB</span>
+                                        <span class="meta-dot">•</span>
+                                        <span class="file-ready-tag">Ready to Process</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove-file" id="removeSelectedFileBtn" title="Remove file">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode 3: Direct Transcript / Notes View -->
                     <div class="mode-view hidden" id="modeTranscriptView">
                         <div class="input-wrapper title-input-wrapper">
                             <input 

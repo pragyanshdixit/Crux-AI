@@ -256,12 +256,24 @@ def process_input(source: str, session_id: str = None) -> AudioChunksList:
         audio_file = download_youtube_audio(clean_source, output_dir=target_dir)
         temp_files.append(audio_file)
     elif os.path.isfile(clean_source):
-        print(f"[Crux AI] Using local audio file: {clean_source}")
-        audio_file = clean_source
+        print(f"[Crux AI] Using local file: {clean_source}")
+        ext = os.path.splitext(clean_source)[1].lower()
+        video_exts = {".mp4", ".mkv", ".mov", ".webm", ".avi", ".flv", ".wmv", ".m4v"}
+        if ext in video_exts:
+            print(f"[Crux AI] Extracting audio from local video container ({ext})...")
+            base_name = os.path.splitext(os.path.basename(clean_source))[0]
+            converted_audio = os.path.join(target_dir, f"{base_name}_extracted.mp3")
+            audio = AudioSegment.from_file(clean_source)
+            audio = audio.set_channels(1).set_frame_rate(16000)
+            audio.export(converted_audio, format="mp3", bitrate="96k")
+            audio_file = converted_audio
+            temp_files.append(converted_audio)
+        else:
+            audio_file = clean_source
     else:
         raise ValueError(
             f"Invalid input: '{source}'. Please enter a valid YouTube URL (e.g., https://youtu.be/...) "
-            f"or an existing local audio file path."
+            f"or an existing local video/audio file path."
         )
 
     # Check file size (Groq limit is 25MB)

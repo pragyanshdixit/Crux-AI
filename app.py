@@ -7,6 +7,7 @@ import os
 import sys
 import uuid
 import time
+import shutil
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -18,7 +19,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -195,6 +196,117 @@ def process_video(req: ProcessRequest):
             )
             raise HTTPException(status_code=422, detail=detail_msg)
         raise HTTPException(status_code=500, detail=err_msg)
+
+
+ALLOWED_MEDIA_EXTENSIONS = {
+    ".mp4", ".mkv", ".mov", ".webm", ".avi", ".wmv", ".m4v",
+    ".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac"
+}
+
+
+@app.post("/api/upload-process")
+async def upload_and_process_media(
+    file: UploadFile = File(...),
+    title: Optional[str] = Form(None),
+    api_key: Optional[str] = Form(None),
+    auto_cleanup: bool = Form(True)
+):
+    """Processes a locally uploaded video or audio file.
+    Extracts audio, transcribes with Groq Whisper LPU, synthesizes executive insights,
+    and indexes into ChromaDB for interactive Q&A.
+    """
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="No media file was uploaded.")
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_MEDIA_EXTENSIONS:
+        allowed_list = ", ".join(sorted(ALLOWED_MEDIA_EXTENSIONS))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported format '{ext}'. Allowed formats: {allowed_list}"
+        )
+
+    effective_api_key = (api_key.strip() if api_key else None) or os.getenv("GROQ_API_KEY")
+    if not effective_api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Groq API key required. Please enter your API key in settings or configure GROQ_API_KEY in .env"
+        )
+
+    session_id = uuid.uuid4().hex[:10]
+    session_dir = os.path.join("downloads", f"session_{session_id}")
+    os.makedirs(session_dir, exist_ok=True)
+    clean_upload_path = os.path.join(session_dir, f"raw_upload{ext}")
+    start_time = time.time()
+    audio_cleaned = False
+
+    try:
+        # Stream-save file to disk
+        with open(clean_upload_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Process input (converts video to mp3 and handles chunks if needed)
+        chunks = process_input(clean_upload_path, session_id=session_id)
+        if not chunks:
+            raise HTTPException(status_code=500, detail="Audio extraction failed from the uploaded file.")
+
+        chunk_count = len(chunks)
+
+        # Transcribe via Groq Whisper LPU
+        transcription = transcribe_chunks(chunks, api_key=effective_api_key)
+        if not transcription.strip():
+            raise HTTPException(status_code=500, detail="Speech-to-text produced an empty transcription from the uploaded file.")
+
+        # Cleanup if requested
+        if auto_cleanup:
+            try:
+                if os.path.isfile(clean_upload_path):
+                    os.remove(clean_upload_path)
+                if hasattr(chunks, "cleanup"):
+                    chunks.cleanup()
+                audio_cleaned = True
+            except Exception as ce:
+                print(f"[Crux AI] Cleanup warning: {ce}")
+
+        # Extract structured insights (Single unified call with gpt-oss-120b)
+        insights = extract_all_insights(transcription, api_key=effective_api_key)
+        base_name = os.path.splitext(file.filename)[0].replace("_", " ").replace("-", " ").strip().title()
+        final_title = (title.strip() if title and title.strip() else None) or insights.get("title") or base_name or "Uploaded Video Intelligence"
+
+        # Build RAG vector store for interactive chat
+        rag_chain = build_rag_chain(transcription, session_id=session_id, api_key=effective_api_key)
+        processing_time = round(time.time() - start_time, 1)
+
+        result_data = {
+            "session_id": session_id,
+            "title": final_title,
+            "summary": insights.get("summary", ""),
+            "actionable_items": insights.get("actionable_items", ""),
+            "decisions": insights.get("decisions", ""),
+            "questions": insights.get("questions", ""),
+            "transcription": transcription,
+            "chunk_count": chunk_count,
+            "word_count": len(transcription.split()),
+            "processing_time": processing_time,
+            "audio_cleaned": audio_cleaned
+        }
+
+        SESSIONS[session_id] = {
+            "rag_chain": rag_chain,
+            "data": result_data,
+            "api_key": effective_api_key,
+            "created_at": time.time()
+        }
+
+        return result_data
+
+    except Exception as e:
+        if os.path.isdir(session_dir):
+            try:
+                shutil.rmtree(session_dir, ignore_errors=True)
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/chat")
